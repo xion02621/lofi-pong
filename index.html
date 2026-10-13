@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lofi Pong</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg: #10121d;
+    --panel: #191c2b;
+    --panel2: #22263a;
+    --text: #e8e8f4;
+    --muted: #9298b8;
+    --pink: #ff91c8;
+    --blue: #87d7ff;
+    --purple: #b5a0ff;
+    --green: #a8f0cf;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse at top, #25213c 0%, transparent 60%),
+        var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+button, select, input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.app {
+    width: min(1050px, 100%);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.logo {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 3px;
+}
+
+.logo span {
+    color: var(--pink);
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 3px;
+    margin-top: 4px;
+}
+
+.header-right {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.small-btn {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid #343950;
+    padding: 9px 13px;
+    border-radius: 10px;
+}
+
+.small-btn:hover {
+    border-color: var(--pink);
+}
+
+.game-shell {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #44415f;
+    border-radius: 18px;
+    background: #101320;
+    box-shadow: 0 20px 80px #0005, 0 0 35px #b5a0ff12;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.hud {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 15px 20px;
+    background: #191c2b;
+    border-bottom: 1px solid #30334b;
+}
+
+.player-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+}
+
+.player-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 30px;
+    font-weight: 500;
+}
+
+.left-score {
+    color: var(--blue);
+}
+
+.right-score {
+    color: var(--pink);
+    text-align: right;
+}
+
+.center-score {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.control-panel {
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid #30334b;
+    background: var(--panel);
+}
+
+.panel-title {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.ability-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.ability {
+    min-height: 68px;
+    position: relative;
+    padding: 10px 5px;
+    background: var(--panel2);
+    border: 1px solid #393e59;
+    border-radius: 10px;
+    color: var(--text);
+    text-align: center;
+}
+
+.ability strong {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.ability small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.ability:hover:not(:disabled) {
+    border-color: var(--purple);
+    background: #2b2a45;
+}
+
+.ability:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.ability.cooling {
+    border-color: #44415f;
+}
+
+.ability.cooling small {
+    color: var(--pink);
+}
+
+.info {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.info b {
+    color: var(--text);
+    font-weight: 500;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: #0d0f1bd9;
+    backdrop-filter: blur(7px);
+    z-index: 5;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.menu-card {
+    width: min(420px, 100%);
+    padding: 28px;
+    border: 1px solid #464260;
+    border-radius: 18px;
+    background: #191c2bf5;
+    box-shadow: 0 20px 70px #0005;
+    max-height: 95%;
+    overflow-y: auto;
+}
+
+.menu-card h1 {
+    margin: 0 0 8px;
+    font-size: 30px;
+    letter-spacing: 1px;
+}
+
+.menu-card h1 span {
+    color: var(--pink);
+}
+
+.menu-card p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+}
+
+.field {
+    margin-bottom: 15px;
+}
+
+.field label {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 7px;
+}
+
+.field select,
+.field input {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #393e59;
+    border-radius: 9px;
+    color: var(--text);
+    background: var(--panel2);
+    outline: none;
+}
+
+.field select:focus,
+.field input:focus {
+    border-color: var(--purple);
+}
+
+.primary-btn {
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    padding: 13px;
+    margin-top: 5px;
+    background: linear-gradient(100deg, var(--pink), var(--purple));
+    color: #171426;
+    font-weight: 700;
+    transition: transform .15s;
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+}
+
+.secondary-btn {
+    width: 100%;
+    border: 1px solid #393e59;
+    border-radius: 10px;
+    padding: 11px;
+    margin-top: 9px;
+    color: var(--text);
+    background: var(--panel2);
+}
+
+.menu-note {
+    margin-top: 15px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.8;
+}
+
+.menu-note b {
+    color: var(--blue);
+}
+
+.end-score {
+    font-size: 48px;
+    font-family: 'DM Mono', monospace;
+    margin: 15px 0;
+    color: var(--pink);
+}
+
+/* LOFI MUSIC PLAYER */
+
+.music-panel {
+    margin-top: 14px;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid #393650;
+    background: linear-gradient(120deg, #191c2b, #242039);
+}
+
+.music-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.music-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.music-icon {
+    width: 45px;
+    height: 45px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ff91c8, #b5a0ff);
+    color: #171426;
+    font-size: 22px;
+}
+
+.music-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+}
+
+.track-name {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.track-description {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+}
+
+.music-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.music-btn {
+    width: 39px;
+    height: 39px;
+    border-radius: 10px;
+    border: 1px solid #393e59;
+    background: var(--panel2);
+    color: var(--text);
+    font-size: 15px;
+}
+
+.music-btn:hover {
+    border-color: var(--pink);
+}
+
+.music-btn.play {
+    background: linear-gradient(120deg, var(--pink), var(--purple));
+    color: #171426;
+    border: none;
+    font-weight: bold;
+}
+
+.music-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 17px;
+}
+
+.music-volume {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.music-volume input {
+    width: 130px;
+    accent-color: var(--pink);
+}
+
+.music-mode {
+    color: var(--green);
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+.music-visualizer {
+    display: flex;
+    gap: 3px;
+    height: 18px;
+    align-items: center;
+}
+
+.music-visualizer span {
+    width: 3px;
+    height: 5px;
+    border-radius: 5px;
+    background: var(--pink);
+}
+
+.music-visualizer.playing span {
+    animation: equalize .6s ease-in-out infinite alternate;
+}
+
+.music-visualizer span:nth-child(2n) {
+    animation-delay: .2s;
+}
+
+.music-visualizer span:nth-child(3n) {
+    animation-delay: .4s;
+}
+
+@keyframes equalize {
+    from { height: 4px; }
+    to { height: 18px; }
+}
+
+@media (max-width: 650px) {
+    body {
+        padding: 10px;
+    }
+
+    .logo {
+        font-size: 21px;
+    }
+
+    .controls {
+        grid-template-columns: 1fr;
+    }
+
+    .hud {
+        padding: 12px;
+    }
+
+    .player-score {
+        font-size: 23px;
+    }
+
+    .menu-card {
+        padding: 20px;
+    }
+
+    .music-controls {
+        width: 100%;
+    }
+
+    .music-btn {
+        flex: 1;
+    }
+
+    .music-volume {
+        width: 100%;
+    }
+
+    .music-volume input {
+        flex: 1;
+    }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+    <header class="header">
+        <div>
+            <div class="logo">LOFI <span>PONG</span></div>
+            <div class="subtitle">CHILL VIBES. SERIOUS RALLIES.</div>
+        </div>
+
+        <div class="header-right">
+            <button class="small-btn" id="soundButton">♫ Sound: ON</button>
+            <button class="small-btn" id="pauseButton">Ⅱ Pause</button>
+            <button class="small-btn" id="settingsButton">⚙ Settings</button>
+        </div>
+    </header>
+
+    <main class="game-shell">
+
+        <div class="hud">
+            <div>
+                <div class="player-label">YOU</div>
+                <div class="player-score left-score" id="playerScore">0</div>
+            </div>
+
+            <div class="center-score">
+                <div>FIRST TO</div>
+                <div id="targetScore">7</div>
+            </div>
+
+            <div>
+                <div class="player-label" style="text-align:right">CPU</div>
+                <div class="player-score right-score" id="cpuScore">0</div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+        <div class="overlay" id="startOverlay">
+            <div class="menu-card">
+                <h1>LOFI <span>PONG</span></h1>
+                <p>A cozy little Pong game. Master your abilities, outplay the CPU, and keep the rally alive.</p>
+
+                <div class="field">
+                    <label for="difficulty">CPU DIFFICULTY</label>
+                    <select id="difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="hard">Hard</option>
+                        <option value="insane">Insane</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="winScore">POINTS TO WIN</label>
+                    <select id="winScore">
+                        <option value="3">3 points</option>
+                        <option value="5">5 points</option>
+                        <option value="7" selected>7 points</option>
+                        <option value="10">10 points</option>
+                        <option value="15">15 points</option>
+                    </select>
+                </div>
+
+                <button class="primary-btn" id="startButton">START GAME</button>
+
+                <div class="menu-note">
+                    <b>W / S</b> or <b>↑ / ↓</b> — Move<br>
+                    <b>1</b> — Dash &nbsp; <b>2</b> — Time Warp &nbsp; <b>3</b> — Chaos<br>
+                    <b>ESC</b> — Pause
+                </div>
+            </div>
+        </div>
+
+        <div class="overlay hidden" id="pauseOverlay">
+            <div class="menu-card">
+                <h1>TAKE A <span>BREATH</span></h1>
+                <p>The music can wait. Your next rally is waiting too.</p>
+                <button class="primary-btn" id="resumeButton">RESUME</button>
+                <button class="secondary-btn" id="restartButton">RESTART GAME</button>
+                <button class="secondary-btn" id="pauseMenuButton">MAIN MENU</button>
+            </div>
+        </div>
+
+        <div class="overlay hidden" id="settingsOverlay">
+            <div class="menu-card">
+                <h1>GAME <span>SETTINGS</span></h1>
+                <p>Adjust the game to your liking.</p>
+
+                <div class="field">
+                    <label for="settingsDifficulty">CPU DIFFICULTY</label>
+                    <select id="settingsDifficulty">
+                        <option value="easy">Easy</option>
+                        <option value="normal">Normal</option>
+                        <option value="hard">Hard</option>
+                        <option value="insane">Insane</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="settingsWinScore">POINTS TO WIN</label>
+                    <select id="settingsWinScore">
+                        <option value="3">3 points</option>
+                        <option value="5">5 points</option>
+                        <option value="7">7 points</option>
+                        <option value="10">10 points</option>
+                        <option value="15">15 points</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="settingsControlMode">CONTROL MODE</label>
+                    <select id="settingsControlMode">
+                        <option value="keyboard">Keyboard (W/S or Arrow Keys)</option>
+                        <option value="mouse">Mouse</option>
+                    </select>
+                </div>
+
+                <button class="primary-btn" id="saveSettingsButton">SAVE SETTINGS</button>
+                <button class="secondary-btn" id="closeSettingsButton">CLOSE</button>
+            </div>
+        </div>
+
+        <div class="overlay hidden" id="endOverlay">
+            <div class="menu-card">
+                <h1 id="endTitle">NICE <span>GAME</span></h1>
+                <p id="endMessage">The rally has ended.</p>
+                <div class="end-score" id="finalScore">0 - 0</div>
+                <button class="primary-btn" id="playAgainButton">PLAY AGAIN</button>
+                <button class="secondary-btn" id="endMenuButton">MAIN MENU</button>
+            </div>
+        </div>
+
+    </main>
+
+    <section class="music-panel">
+        <div class="music-top">
+            <div class="music-brand">
+                <div class="music-icon">♫</div>
+                <div>
+                    <div class="music-label">YOUR LOFI PLAYLIST</div>
+                    <div class="track-name" id="trackName">Rainy Window</div>
+                    <div class="track-description" id="trackDescription">Soft piano • Rainy atmosphere</div>
+                </div>
+            </div>
+
+            <div class="music-visualizer" id="musicVisualizer">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+            </div>
+        </div>
+
+        <div class="music-bottom">
+            <div class="music-controls">
+                <button class="music-btn" id="previousTrackButton" title="Previous track">|◀</button>
+                <button class="music-btn play" id="musicPlayButton" title="Play music">▶</button>
+                <button class="music-btn" id="nextTrackButton" title="Next track">▶|</button>
+            </div>
+
+            <div class="music-volume">
+                <span>♫ VOLUME</span>
+                <input id="musicVolume" type="range" min="0" max="100" value="35">
+                <span id="musicVolumeValue">35%</span>
+            </div>
+
+            <div class="music-mode">♻ AUTO-REPEAT PLAYLIST</div>
+        </div>
+    </section>
+
+    <section class="controls">
+
+        <div class="control-panel">
+            <div class="panel-title">SPECIAL ABILITIES</div>
+
+            <div class="ability-row">
+                <button class="ability" id="dashButton">
+                    <strong>⚡ DASH [1]</strong>
+                    <small id="dashStatus">Ready</small>
+                </button>
+
+                <button class="ability" id="warpButton">
+                    <strong>◷ TIME WARP [2]</strong>
+                    <small id="warpStatus">Ready</small>
+                </button>
+
+                <button class="ability" id="chaosButton">
+                    <strong>✦ CHAOS [3]</strong>
+                    <small id="chaosStatus">Ready</small>
+                </button>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">HOW TO PLAY</div>
+
+            <div class="info" id="howToPlayInfo">
+                <b>Move:</b> W / S or arrow keys<br>
+                <b>Dash:</b> Temporarily move faster<br>
+                <b>Time Warp:</b> Slow the ball for a moment<br>
+                <b>Chaos:</b> Give the ball a wild curve for 3 seconds<br>
+                <b>Goal:</b> Get the ball past the CPU paddle
+            </div>
+        </div>
+
+    </section>
+
+</div>
+<div id="youtubeMusicPlayer"
+     style="position:fixed;left:-500px;top:0;width:1px;height:1px;">
+</div>
+<script src="script.js"></script>
+</body>
+</html>
